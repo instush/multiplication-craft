@@ -140,6 +140,10 @@ function Board({ board, validResult, onDrop, hoverCell, setHoverCell, dragging }
                       if (filled) return
                       onDrop(r, c)
                     }}
+                    onClick={() => {
+                      if (filled) return
+                      onDrop(r, c)
+                    }}
                   >
                     {filled ? value : ''}
                   </td>
@@ -153,6 +157,19 @@ function Board({ board, validResult, onDrop, hoverCell, setHoverCell, dragging }
   )
 }
 
+function useIsTouchDevice() {
+  const [isTouch, setIsTouch] = useState(false)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const mq = window.matchMedia('(pointer: coarse)')
+    setIsTouch(mq.matches)
+    const handler = (e) => setIsTouch(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+  return isTouch
+}
+
 function App() {
   const [gameState, setGameState] = useState('menu')   // 'menu' | 'playing' | 'won'
   const [difficulty, setDifficulty] = useState('easy')
@@ -161,6 +178,7 @@ function App() {
   const [score, setScore] = useState(0)
   const [timeLeft, setTimeLeft] = useState(0)
   const [hoverCell, setHoverCell] = useState(null)
+  const isTouch = useIsTouchDevice()
   const [dragging, setDragging] = useState(false)
   const [flash, setFlash] = useState(null) // 'correct' | 'wrong' | 'timeout'
   const flashTimer = useRef(null)
@@ -299,7 +317,7 @@ function App() {
 
       <div className="play-area">
         <div className="token-wrap">
-          <div className="token-label">DRAG ME!</div>
+          <div className="token-label">{isTouch ? 'TAP A CELL!' : 'DRAG ME!'}</div>
           {currentResult !== null && (
             <div
               className={`token mc-block bg-diamond ${dragging ? 'is-dragging' : ''}`}
@@ -320,7 +338,9 @@ function App() {
             </div>
           )}
           <div className="token-hint">
-            Find the cell whose row × column = <b>{currentResult}</b>
+            {isTouch
+              ? <>Tap the cell whose row × column = <b>{currentResult}</b></>
+              : <>Drag here or click the cell where row × column = <b>{currentResult}</b></>}
           </div>
         </div>
 

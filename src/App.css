@@ -332,6 +332,7 @@
 
 .cell.empty {
   color: #555;
+  cursor: pointer;
 }
 
 .cell.filled {
