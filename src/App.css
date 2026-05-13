@@ -102,8 +102,12 @@
 
 .diff-buttons {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .diff-buttons { grid-template-columns: repeat(2, 1fr); }
 }
 
 .diff-btn {
@@ -121,6 +125,7 @@
 .diff-btn:hover { transform: translate(-2px, -2px); }
 .diff-btn:active { transform: translate(1px, 1px); }
 
+.diff-super  { background: linear-gradient(135deg, var(--mc-diamond) 0%, var(--mc-diamond-dark) 100%); color: #0B3A3A; text-shadow: 1px 1px 0 rgba(255,255,255,0.4); }
 .diff-easy   { background: var(--mc-emerald); }
 .diff-medium { background: var(--mc-gold); color: #3B2A00; text-shadow: 1px 1px 0 rgba(255,255,255,0.4); }
 .diff-hard   { background: var(--mc-redstone); }
@@ -305,17 +310,17 @@
 }
 
 .board th, .board td {
-  width: 46px;
-  height: 46px;
+  width: 55px;
+  height: 55px;
   text-align: center;
   vertical-align: middle;
   font-family: 'Press Start 2P', monospace;
-  font-size: 13px;
+  font-size: 16px;
   padding: 0;
 }
 
 .board .corner {
-  font-size: 22px;
+  font-size: 26px;
   color: var(--mc-gold);
   text-shadow: 2px 2px 0 #000;
 }
@@ -323,7 +328,7 @@
 .board .header {
   color: #2C1810;
   text-shadow: 1px 1px 0 rgba(255,255,255,0.35);
-  font-size: 16px;
+  font-size: 19px;
 }
 
 .cell {
@@ -361,6 +366,24 @@
   filter: brightness(1.6);
   box-shadow: 0 0 0 3px var(--mc-gold);
   z-index: 2;
+}
+
+.board .header.hint {
+  color: #3B2A00;
+  animation: hint-pulse 0.9s ease-in-out infinite;
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes hint-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 3px var(--mc-gold), 0 0 10px 3px rgba(255, 230, 0, 0.55);
+    filter: brightness(1.1);
+  }
+  50% {
+    box-shadow: 0 0 0 3px var(--mc-gold), 0 0 22px 6px rgba(255, 230, 0, 1);
+    filter: brightness(1.5);
+  }
 }
 
 /* =========================================================

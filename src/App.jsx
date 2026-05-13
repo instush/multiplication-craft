@@ -1,25 +1,22 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import './App.css'
 
-const COLS = 10   // multiplier 1..10
-const ROWS = 10   // multiplicand 1..10
-const TOTAL_CELLS = COLS * ROWS
-
 const DIFFICULTY = {
-  easy:   { seconds: 20, label: 'EASY',   color: 'var(--mc-emerald)' },
-  medium: { seconds: 14, label: 'MEDIUM', color: 'var(--mc-gold)' },
-  hard:   { seconds: 7,  label: 'HARD',   color: 'var(--mc-redstone)' },
+  super:  { seconds: 20, label: 'SUPER EASY', color: 'var(--mc-diamond)',  size: 5  },
+  easy:   { seconds: 20, label: 'EASY',       color: 'var(--mc-emerald)',  size: 10 },
+  medium: { seconds: 14, label: 'MEDIUM',     color: 'var(--mc-gold)',     size: 10 },
+  hard:   { seconds: 7,  label: 'HARD',       color: 'var(--mc-redstone)', size: 10 },
 }
 
-function buildEmptyBoard() {
+function buildEmptyBoard(size) {
   // board[r-1][c-1] === true means filled
-  return Array.from({ length: ROWS }, () => Array(COLS).fill(false))
+  return Array.from({ length: size }, () => Array(size).fill(false))
 }
 
 function findEmptyCells(board) {
   const empties = []
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
+  for (let r = 0; r < board.length; r++) {
+    for (let c = 0; c < board[r].length; c++) {
       if (!board[r][c]) empties.push([r, c])
     }
   }
@@ -98,22 +95,34 @@ function WinScreen({ score, difficulty, onRestart }) {
   )
 }
 
-function Board({ board, validResult, onDrop, hoverCell, setHoverCell, dragging }) {
+function Board({ board, validResult, onDrop, hoverCell, setHoverCell, dragging, hintHeader }) {
+  const hintRow = hintHeader?.type === 'row' ? hintHeader.idx : -1
+  const hintCol = hintHeader?.type === 'col' ? hintHeader.idx : -1
+  const cols = board[0]?.length ?? 0
   return (
     <div className="board-wrap">
       <table className="board mc-block bg-stone">
         <thead>
           <tr>
             <th className="corner mc-block bg-dirt-dark">×</th>
-            {Array.from({ length: COLS }, (_, c) => (
-              <th key={c} className="header mc-block bg-wood">{c + 1}</th>
+            {Array.from({ length: cols }, (_, c) => (
+              <th
+                key={c}
+                className={`header mc-block bg-wood ${c === hintCol ? 'hint' : ''}`}
+              >
+                {c + 1}
+              </th>
             ))}
           </tr>
         </thead>
         <tbody>
           {board.map((row, r) => (
             <tr key={r}>
-              <th className="header mc-block bg-wood">{r + 1}</th>
+              <th
+                className={`header mc-block bg-wood ${r === hintRow ? 'hint' : ''}`}
+              >
+                {r + 1}
+              </th>
               {row.map((filled, c) => {
                 const value = (r + 1) * (c + 1)
                 const isHover = hoverCell && hoverCell[0] === r && hoverCell[1] === c
@@ -173,7 +182,7 @@ function useIsTouchDevice() {
 function App() {
   const [gameState, setGameState] = useState('menu')   // 'menu' | 'playing' | 'won'
   const [difficulty, setDifficulty] = useState('easy')
-  const [board, setBoard] = useState(buildEmptyBoard)
+  const [board, setBoard] = useState(() => buildEmptyBoard(DIFFICULTY.easy.size))
   const [currentResult, setCurrentResult] = useState(null)
   const [score, setScore] = useState(0)
   const [timeLeft, setTimeLeft] = useState(0)
@@ -184,7 +193,7 @@ function App() {
   const flashTimer = useRef(null)
 
   const startGame = (diff) => {
-    const fresh = buildEmptyBoard()
+    const fresh = buildEmptyBoard(DIFFICULTY[diff].size)
     setDifficulty(diff)
     setBoard(fresh)
     setScore(0)
@@ -199,7 +208,8 @@ function App() {
       (sum, row) => sum + row.filter(Boolean).length,
       0,
     )
-    if (filledCount === TOTAL_CELLS) {
+    const totalCells = nextBoard.length * nextBoard[0].length
+    if (filledCount === totalCells) {
       setCurrentResult(null)
       setGameState('won')
       return
@@ -260,6 +270,24 @@ function App() {
     [board],
   )
 
+  // Hint kicks in when the timer enters the yellow zone (<= 50% of the bar).
+  // Highlight ONE factor header (row or column) of a matching empty cell —
+  // never the answer cell itself, so the player still has to do the math.
+  const hintHeader = useMemo(() => {
+    if (gameState !== 'playing' || currentResult == null || timePct > 50) return null
+    for (let r = 0; r < board.length; r++) {
+      for (let c = 0; c < board[r].length; c++) {
+        if (!board[r][c] && (r + 1) * (c + 1) === currentResult) {
+          // Alternate row/col by question so the hint isn't always the row.
+          return currentResult % 2 === 0
+            ? { type: 'col', idx: c }
+            : { type: 'row', idx: r }
+        }
+      }
+    }
+    return null
+  }, [gameState, currentResult, timePct, board])
+
   if (gameState === 'menu') return <MenuScreen onStart={startGame} />
   if (gameState === 'won')
     return (
@@ -279,7 +307,7 @@ function App() {
         </div>
         <div className="hud-section">
           <span className="hud-label">FILLED</span>
-          <span className="hud-value diamond">{filledCount}/{TOTAL_CELLS}</span>
+          <span className="hud-value diamond">{filledCount}/{board.length * board[0].length}</span>
         </div>
         <div className="hud-section">
           <span className="hud-label">MODE</span>
@@ -351,6 +379,7 @@ function App() {
           hoverCell={hoverCell}
           setHoverCell={setHoverCell}
           dragging={dragging}
+          hintHeader={hintHeader}
         />
       </div>
     </div>
